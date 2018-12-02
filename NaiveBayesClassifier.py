@@ -9,10 +9,12 @@ preprocessor = PreProcessor()
 def calculate_term_category_dic():
     index = IndexCreator.index_train_documents()
     term_category_dic = {}
-    for (term, category_dic) in index.index_db.dictionary:
+    for term in index.index_db.dictionary:
+        category_dic = index.index_db.dictionary[term]
         if term not in term_category_dic:
             term_category_dic[term] = {}
-        for (category, indices) in category_dic:
+        for category in category_dic:
+            indices = category_dic[category]
             if category not in term_category_dic[term]:
                 term_category_dic[term][category] = len(indices)
     return term_category_dic
@@ -24,8 +26,10 @@ def calculate_vocabulary_length(term_category_dic):
 
 def calculate_category_term_sums(term_category_dic):
     category_term_sums = {}
-    for term, category_dic in term_category_dic:
-        for category, number_of_terms in category_dic:
+    for term in term_category_dic:
+        category_dic = term_category_dic[term]
+        for category in category_dic:
+            number_of_terms = category_dic[category]
             if category not in category_term_sums:
                 category_term_sums[category] = 0
             category_term_sums[category] += number_of_terms
@@ -57,7 +61,8 @@ def classify(document: str, term_category_dic, vocabulary_length, category_term_
                 categories_score[category] += math.log((number_of_terms + 1)/(category_term_sums[category] + vocabulary_length))
 
     maximum_score_category = next(iter(categories_score.keys()))
-    for category, score in categories_score:
+    for category in categories_score:
+        score = categories_score[category]
         if score > maximum_score_category:
             maximum_score_category = category
 
