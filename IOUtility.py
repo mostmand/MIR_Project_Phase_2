@@ -1,7 +1,6 @@
 import csv
 import errno
 import os
-
 from Category import Category
 
 

@@ -1,5 +1,5 @@
 import math
-from typing import Dict, List, Set
+from typing import Dict, Set
 from Category import Category
 from IOUtility import IOUtility
 import IndexCreator
