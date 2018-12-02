@@ -85,17 +85,17 @@ class PositionalIndexer:
             result.extend(self.preprocessor.pre_process(word, is_persian))
         return result
 
-    def save(self, compress: bool):
+    def save(self):
         ids_filename = 'Index/ids.mir'
-        Serialization.write_ids(self.id_manager, ids_filename)
+        Serialization.save(self.id_manager, ids_filename)
         index_filename = 'Index/index.mir'
-        Serialization.write_to_file(self.index_db, index_filename, compress)
+        Serialization.save(self.index_db, index_filename)
 
-    def load(self, compress: bool):
+    def load(self):
         ids_filename = 'Index/ids.mir'
-        self.id_manager = Serialization.load_ids(ids_filename)
+        self.id_manager = Serialization.load(ids_filename)
         index_filename = 'Index/index.mir'
-        self.index_db = Serialization.read_from_file(index_filename, compress)
+        self.index_db = Serialization.load(index_filename)
 
     def search(self, query: str, is_persian: bool):
         vectors_dictionary: Dict[int, List[float]] = {}  # Dictionary from docId to vector

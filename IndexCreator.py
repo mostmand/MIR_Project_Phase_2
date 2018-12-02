@@ -12,3 +12,10 @@ def index_train_documents():
     print('done!!!')
 
     return positional_indexer
+
+
+# positional_indexer = index_train_documents()
+# positional_indexer.save()
+#
+#
+# print('somethin')
