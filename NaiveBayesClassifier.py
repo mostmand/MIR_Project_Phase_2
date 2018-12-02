@@ -1,6 +1,4 @@
 import math
-from typing import Dict, Set
-from Category import Category
 from IOUtility import IOUtility
 import IndexCreator
 from PositionalIndexer import PositionalIndexer
@@ -13,14 +11,14 @@ index.load()
 
 def calculate_term_category_dic():
     term_category_dic = {}
-    for term in index.index_db.dictionary:
-        category_dic = index.index_db.dictionary[term]
+    for term, indices in index.index_db.dictionary.items():
         if term not in term_category_dic:
             term_category_dic[term] = {}
-        for category in category_dic:
-            indices = category_dic[category]
+        for positional_index in indices:
+            category = index.category_by_doc_id[positional_index.document_id]
             if category not in term_category_dic[term]:
-                term_category_dic[term][category] = len(indices)
+                term_category_dic[term][category] = 0
+            term_category_dic[term][category] += 1
     return term_category_dic
 
 
@@ -42,23 +40,14 @@ def calculate_category_term_sums(term_category_dic):
 
 def calculate_p_hat_by_category():
     p_hat_by_category = {}
-    docs_by_category: Dict[Category, Set[int]] = {}
-
-    for term, category_dic in index.index_db.dictionary.items():
-        for category, indices in category_dic.items():
-            if category not in docs_by_category:
-                docs_by_category[category] = set()
-            for positional_index in indices:
-                docs_by_category[category].add(positional_index.document_id)
-
-    for category, docs in docs_by_category.items():
+    for doc_id, category in index.category_by_doc_id.items():
         if category not in p_hat_by_category:
             p_hat_by_category[category] = 0
-        p_hat_by_category[category] += len(docs)
+        p_hat_by_category[category] += 1
 
     number_of_all_docs = 0
-    for category in p_hat_by_category:
-        number_of_all_docs += p_hat_by_category[category]
+    for number_of_docs in p_hat_by_category.values():
+        number_of_all_docs += number_of_docs
 
     for category in p_hat_by_category:
         p_hat_by_category[category] = math.log(p_hat_by_category[category] / number_of_all_docs)

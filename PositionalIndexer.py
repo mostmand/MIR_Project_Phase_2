@@ -70,14 +70,19 @@ class PositionalIndexer:
         self.index_db = Index()
         self.preprocessor = PreProcessor()
         self.id_manager = IdManager()
+        self.category_by_doc_id = {}
+        self.vectors_by_doc_id = {}
+        self.idf_by_term = {}
 
-    def index(self, file_name, is_persian: bool):
+    def index(self, file_name):
         for (word, document_number, position, doc_class) in IOUtility.get_word_by_word(file_name):
-            tokens = self.preprocessor.pre_process(word, is_persian)
+            tokens = self.preprocessor.pre_process_english(word)
             document_name = file_name + '_' + str(document_number)
             doc_id = self.id_manager.get_document_id(document_name)
+            if doc_id not in self.category_by_doc_id:
+                self.category_by_doc_id[doc_id] = doc_class
             for token in tokens:
-                self.index_db.index(token, doc_id, position, doc_class)
+                self.index_db.index(token, doc_id, position)
 
     def process_given_text(self, text, is_persian: bool):
         result = []
@@ -90,64 +95,33 @@ class PositionalIndexer:
         Serialization.save(self.id_manager, ids_filename)
         index_filename = 'Index/index.mir'
         Serialization.save(self.index_db, index_filename)
+        category_by_doc_id_filename = 'Index/category_by_doc_id.mir'
+        Serialization.save(self.category_by_doc_id, category_by_doc_id_filename)
+        vectors_by_doc_id_filename = 'Index/vectors_by_doc_id.mir'
+        Serialization.save(self.vectors_by_doc_id, vectors_by_doc_id_filename)
 
     def load(self):
         ids_filename = 'Index/ids.mir'
         self.id_manager = Serialization.load(ids_filename)
         index_filename = 'Index/index.mir'
         self.index_db = Serialization.load(index_filename)
+        category_by_doc_id_filename = 'Index/category_by_doc_id.mir'
+        self.category_by_doc_id = Serialization.load(category_by_doc_id_filename)
+        vectors_by_doc_id_filename = 'Index/vectors_by_doc_id.mir'
+        self.vectors_by_doc_id = Serialization.load(vectors_by_doc_id_filename)
 
-    def search(self, query: str, is_persian: bool):
-        vectors_dictionary: Dict[int, List[float]] = {}  # Dictionary from docId to vector
-        idf_vector: List[float] = []
-        query_terms: List[str] = []
-        for token in list(set(query.split(' '))):
-            distinct_terms = list(set(self.preprocessor.pre_process(token, is_persian)))
-            query_terms.extend(distinct_terms)
+    def create_documents_vectors(self):
+        for term, indices in self.index_db.dictionary.items():
+            for index in indices:
+                if index.document_id not in self.vectors_by_doc_id:
+                    self.vectors_by_doc_id[index.document_id] = {}
+                if term not in self.vectors_by_doc_id[index.document_id]:
+                    self.vectors_by_doc_id[index.document_id][term] = 0
+                self.vectors_by_doc_id[index.document_id][term] += 1
 
-        query_terms = list(set(query_terms))
-        for j in range(len(query_terms)):
-            term = query_terms[j]
-            posting_list = self.index_db.find(term)
-            document_frequency = len(posting_list)
-            idf = self.calculate_idf(document_frequency)
-            idf_vector.append(idf)
-            for i in range(document_frequency):
-                document_id = posting_list[i].document_id
-                term_frequency = 0
-                while posting_list[i].document_id == document_id:
-                    term_frequency += 1
-                    i += 1
-                    if i >= len(posting_list):
-                        break
-                i -= 1
-                if document_id not in vectors_dictionary:
-                    vectors_dictionary[document_id] = [0] * len(query_terms)
-
-                tf = calculate_tf(term_frequency)
-                vectors_dictionary[document_id][j] = (tf * idf)
-
-        term_frequencies = self.calculate_query_term_frequency(query_terms, query, is_persian)
-        query_vector: List[float] = []
-        for i in range(len(query_terms)):
-            query_term = query_terms[i]
-            idf = idf_vector[i]
-            tf = calculate_tf(term_frequencies[query_term])
-            query_vector.append(tf * idf)
-
-        scores = []
-        for document_id in vectors_dictionary.keys():
-            scores.append((document_id, calculate_similarity(vectors_dictionary[document_id], query_vector)))
-
-        scores.sort(key=lambda x: x[1], reverse=True)
-
-        selected_scores = scores[0:19]
-
-        result = []
-        for i in range(len(selected_scores)):
-            document = ''.join(open(self.id_manager.get_file_path(selected_scores[i][0])).readlines())
-            result.append((document, selected_scores[i][1]))
-        return result
+        for doc_id in self.vectors_by_doc_id:
+            for term in self.vectors_by_doc_id[doc_id]:
+                self.vectors_by_doc_id[doc_id][term] *= self.calculate_idf(term)
 
     def calculate_query_term_frequency(self, terms, query, is_persian: bool):
         result: Dict[str, int] = {}
@@ -161,16 +135,15 @@ class PositionalIndexer:
 
         return result
 
-    def calculate_idf(self, document_frequency):
-        return math.log(len(self.id_manager.ids_dic) / document_frequency)
-
-    def get_100_highest_frequency_terms(self):
-        result = []
-        for word in self.index_db.dictionary.keys():
-            result.append((word, len(self.index_db.dictionary[word])))
-        result.sort(key=lambda x: x[1], reverse=True)
-
-        return result[0:99]
+    def calculate_idf(self, term):
+        if term in self.idf_by_term:
+            return self.idf_by_term[term]
+        posting_list = self.index_db.find(term)
+        doc_ids = [index.document_id for index in posting_list]
+        document_frequency = len(set(doc_ids))
+        idf = math.log(len(self.id_manager.ids_dic) / document_frequency)
+        self.idf_by_term[term] = idf
+        return idf
 
     def get_posting_list(self, word, is_persian):
         result = []
