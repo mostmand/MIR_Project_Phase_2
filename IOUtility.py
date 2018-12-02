@@ -2,7 +2,7 @@ import csv
 import errno
 import os
 
-import Category
+from Category import Category
 
 
 class IOUtility:
@@ -32,7 +32,7 @@ class IOUtility:
 
     @staticmethod
     def get_doc_by_doc(file_path: str) -> (Category, str, str):
-        with open('ag_news_csv/test.csv', newline='\n') as csv_file:
+        with open(file_path, newline='\n') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
 
             for row in csv_reader:

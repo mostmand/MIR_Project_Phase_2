@@ -1,5 +1,4 @@
 import math
-
 from IOUtility import IOUtility
 import IndexCreator
 from PreProcess import PreProcessor
@@ -8,7 +7,7 @@ preprocessor = PreProcessor()
 
 
 def calculate_term_category_dic():
-    index = IndexCreator.index_test_documents()
+    index = IndexCreator.index_train_documents()
     term_category_dic = {}
     for (term, category_dic) in index.index_db.dictionary:
         if term not in term_category_dic:
@@ -40,6 +39,11 @@ def classify_documents(file_path: str):
 
     for category, title, description in IOUtility.get_doc_by_doc(file_path):
         calculated_category = classify(title + ' ' + description, term_category_dic, vocabulary_length, category_term_sums)
+        if calculated_category == category:
+            print('Truly categorized')
+        else:
+            print('False positive')
+
 
 
 def classify(document: str, term_category_dic, vocabulary_length, category_term_sums):
@@ -58,3 +62,6 @@ def classify(document: str, term_category_dic, vocabulary_length, category_term_
             maximum_score_category = category
 
     return maximum_score_category
+
+
+classify_documents(IndexCreator.test_samples_path)

@@ -1,14 +1,9 @@
 import math
-from enum import Enum
-from os import listdir
-from typing import Dict, List, Optional, Any
-
-import IOUtility
-from Category import Category
+from typing import Dict, List, Optional
+from IOUtility import IOUtility
 from Index import Index
 from PreProcess import PreProcessor
 from Serialization import Serialization
-import csv
 
 
 def combine_path(parent_directory: str, file_name: str) -> str:
