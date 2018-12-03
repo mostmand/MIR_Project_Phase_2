@@ -1,6 +1,7 @@
 import math
 from typing import Dict, List, Optional
 from IOUtility import IOUtility
+from IdManager import IdManager
 from Index import Index
 from PreProcess import PreProcessor
 from Serialization import Serialization
@@ -8,35 +9,6 @@ from Serialization import Serialization
 
 def combine_path(parent_directory: str, file_name: str) -> str:
     return parent_directory + '/' + file_name
-
-
-class IdManager:
-    ids_dic: Dict[str, int]
-    id_to_file_dic: Dict[int, str]
-    first_available_id: int
-
-    def __init__(self):
-        self.ids_dic = {}
-        self.first_available_id = 1
-        self.id_to_file_dic = {}
-
-    def get_available_id(self) -> int:
-        self.first_available_id += 1
-        return self.first_available_id - 1
-
-    def get_document_id(self, path: str) -> int:
-        if path not in self.ids_dic:
-            self.ids_dic[path] = self.get_available_id()
-
-        doc_id = self.ids_dic[path]
-        self.id_to_file_dic[doc_id] = path
-
-        return doc_id
-
-    def get_file_path(self, doc_id: int) -> Optional[str]:
-        if doc_id in self.id_to_file_dic:
-            return self.id_to_file_dic[doc_id]
-        return None
 
 
 def calculate_tf(term_frequency):
@@ -78,7 +50,7 @@ class PositionalIndexer:
         for (word, document_number, position, doc_class) in IOUtility.get_word_by_word(file_name):
             tokens = self.preprocessor.pre_process_english(word)
             document_name = file_name + '_' + str(document_number)
-            doc_id = self.id_manager.get_document_id(document_name)
+            doc_id = self.id_manager.get_id(document_name)
             if doc_id not in self.category_by_doc_id:
                 self.category_by_doc_id[doc_id] = doc_class
             for token in tokens:
