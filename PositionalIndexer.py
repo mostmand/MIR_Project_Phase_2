@@ -84,12 +84,6 @@ class PositionalIndexer:
             for token in tokens:
                 self.index_db.index(token, doc_id, position)
 
-    def process_given_text(self, text, is_persian: bool):
-        result = []
-        for word in text.split(' '):
-            result.extend(self.preprocessor.pre_process(word, is_persian))
-        return result
-
     def save(self):
         ids_filename = 'Index/ids.mir'
         Serialization.save(self.id_manager, ids_filename)
@@ -141,16 +135,8 @@ class PositionalIndexer:
         posting_list = self.index_db.find(term)
         doc_ids = [index.document_id for index in posting_list]
         document_frequency = len(set(doc_ids))
+        if document_frequency == 0:
+            return None
         idf = math.log(len(self.id_manager.ids_dic) / document_frequency)
         self.idf_by_term[term] = idf
         return idf
-
-    def get_posting_list(self, word, is_persian):
-        result = []
-        tokens = self.process_given_text(word, is_persian)
-        for token in tokens:
-            posting_list = []
-            if token in self.index_db.dictionary:
-                posting_list = self.index_db.dictionary[token]
-            result.append((token, posting_list))
-        return result
